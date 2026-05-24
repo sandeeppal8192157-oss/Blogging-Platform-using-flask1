@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from app import db
-from app.models import User, Post
-from app.forms import PostForm
+# 1. Added Comment here!
+from app.models import User, Post, Comment
+# 2. Added CommentForm here!
+from app.forms import PostForm, CommentForm
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -92,11 +94,26 @@ def new_post():
         
     return render_template('create_post.html', form=form)
 
-# Re-added the missing Post Detail route!
-@main.route("/post/<int:post_id>")
+# 3. Upgraded Post Detail route to handle Comments!
+@main.route("/post/<int:post_id>", methods=['GET', 'POST'])
 def post(post_id):
     post = Post.query.get_or_404(post_id)
-    return render_template('post.html', post=post)
+    form = CommentForm()
+    
+    # If a user submits a comment
+    if form.validate_on_submit():
+        if not current_user.is_authenticated:
+            flash('You need to login to comment.', 'danger')
+            return redirect(url_for('main.login'))
+            
+        # Create the comment and link it to the user and the post
+        comment = Comment(content=form.content.data, author=current_user, parent_post=post)
+        db.session.add(comment)
+        db.session.commit()
+        flash('Your comment has been posted!', 'success')
+        return redirect(url_for('main.post', post_id=post.id))
+        
+    return render_template('post.html', post=post, form=form)
 
 @main.route("/post/<int:post_id>/update", methods=['GET', 'POST'])
 @login_required

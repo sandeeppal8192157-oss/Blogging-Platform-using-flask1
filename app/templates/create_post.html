@@ -4,7 +4,7 @@
     <div class="card-body">
         <h2 class="card-title">{{ post.title }}</h2>
         <div class="text-muted mb-3" style="font-size: 0.9em;">
-            By <strong>{{ post.author.username }}</strong> on {{ post.date_posted.strftime('%Y-%m-%d') }}
+            By <a href="{{ url_for('main.user_posts', username=post.author.username) }}"><strong>{{ post.author.username }}</strong></a> on {{ post.date_posted.strftime('%Y-%m-%d') }}
         </div>
         <p class="card-text" style="white-space: pre-wrap;">{{ post.content }}</p>
         
@@ -15,4 +15,36 @@
         {% endif %}
     </div>
 </article>
+
+<div class="mt-5 mb-5">
+    <h3>Comments ({{ post.comments|length }})</h3>
+    <hr>
+
+    {% if current_user.is_authenticated %}
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="form-group mb-3">
+                {{ form.content(class="form-control", rows="3", placeholder="Leave a comment...") }}
+            </div>
+            <div class="form-group mb-4">
+                {{ form.submit(class="btn btn-primary btn-sm") }}
+            </div>
+        </form>
+    {% else %}
+        <p class="text-muted"><a href="{{ url_for('main.login') }}">Log in</a> to leave a comment.</p>
+    {% endif %}
+
+    {% for comment in post.comments %}
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <p class="mb-1" style="white-space: pre-wrap;">{{ comment.content }}</p>
+                <small class="text-muted">
+                    By <strong>{{ comment.author.username }}</strong> on {{ comment.date_posted.strftime('%Y-%m-%d') }}
+                </small>
+            </div>
+        </div>
+    {% else %}
+        <p class="text-muted">No comments yet. Be the first to share your thoughts!</p>
+    {% endfor %}
+</div>
 {% endblock %}

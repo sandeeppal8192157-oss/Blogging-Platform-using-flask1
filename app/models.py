@@ -12,20 +12,26 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     
-    # This links the User to their Posts
+    # Relationships
     posts = db.relationship('Post', backref='author', lazy=True)
-
-    def __repr__(self):
-        return f"User('{self.username}', '{self.email}')"
+    comments = db.relationship('Comment', backref='author', lazy=True)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     content = db.Column(db.Text, nullable=False)
-    
-    # This links the Post back to the User's ID
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Relationship: A post can have many comments
+    comments = db.relationship('Comment', backref='parent_post', lazy=True, cascade="all, delete-orphan")
 
-    def __repr__(self):
-        return f"Post('{self.title}', '{self.date_posted}')"
+# NEW: The Comment Model
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Foreign Keys: Links the comment to a specific user and a specific post
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
