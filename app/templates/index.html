@@ -1,6 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1 class="mb-4">Latest Posts</h1>
+    <div class="row my-4">
+        <div class="col-md-8 mx-auto">
+            <form action="{{ url_for('main.index') }}" method="GET" class="d-flex shadow-sm rounded">
+                <input class="form-control me-2" type="search" name="search" placeholder="Search blog posts by title, content, or author..." aria-label="Search" value="{{ request.args.get('search', '') }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+                {% if request.args.get('search') %}
+                    <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary ms-2">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <h1 class="mb-4">
+        {% if request.args.get('search') %}
+            Search Results for "{{ request.args.get('search') }}"
+        {% else %}
+            Latest Posts
+        {% endif %}
+    </h1>
     
     {% for post in posts.items %}
         <article class="card mb-4 shadow-sm">
@@ -14,20 +32,21 @@
                 <p class="card-text" style="white-space: pre-wrap;">{{ post.content }}</p>
             </div>
         </article>
+    {% else %}
+        <div class="alert alert-info">No posts found matching your criteria.</div>
     {% endfor %}
     
     <div class="mt-4 mb-5 text-center">
         {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
             {% if page_num %}
                 {% if posts.page == page_num %}
-                    <a class="btn btn-primary mb-2" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
+                    <a class="btn btn-primary mb-2" href="{{ url_for('main.index', page=page_num, search=request.args.get('search', '')) }}">{{ page_num }}</a>
                 {% else %}
-                    <a class="btn btn-outline-primary mb-2" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
+                    <a class="btn btn-outline-primary mb-2" href="{{ url_for('main.index', page=page_num, search=request.args.get('search', '')) }}">{{ page_num }}</a>
                 {% endif %}
             {% else %}
                 <span class="text-muted mx-2">…</span>
             {% endif %}
         {% endfor %}
     </div>
-    
 {% endblock %}

@@ -11,15 +11,24 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    # Grab the current page number from the URL (default to page 1)
     page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('search', '', type=str)
     
-    # Fetch posts, but use .paginate() instead of .all()
-    # We will set it to 2 posts per page for easy testing
-    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=2)
+    # Base query for all posts sorted by date
+    query = Post.query.order_by(Post.date_posted.desc())
+    
+    # If the user typed something in the search bar, filter the results
+    if search_query:
+        query = query.join(User).filter(
+            (Post.title.ilike(f'%{search_query}%')) | 
+            (Post.content.ilike(f'%{search_query}%')) |
+            (User.username.ilike(f'%{search_query}%'))
+        )
+    
+    # Paginate our final filtered query (2 posts per page for easy testing)
+    posts = query.paginate(page=page, per_page=2)
     
     return render_template('index.html', posts=posts)
-
 @main.route('/register', methods=['GET', 'POST'])
 def register():
     # If they are already logged in, send them home
