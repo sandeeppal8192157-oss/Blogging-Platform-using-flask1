@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1 class="mb-4">Posts by {{ user.username }} ({{ posts|length }})</h1>
+    
+    {% for post in posts %}
+        <article class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title h4">
+                    <a class="text-dark text-decoration-none" href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                </h2>
+                <div class="text-muted mb-2" style="font-size: 0.9em;">
+                    By <strong>{{ post.author.username }}</strong> on {{ post.date_posted.strftime('%Y-%m-%d') }}
+                </div>
+                <p class="card-text">{{ post.content }}</p>
+            </div>
+        </article>
+    {% endfor %}
+{% endblock %}

@@ -9,9 +9,13 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    # Fetch all posts from the database, newest first
-    posts = Post.query.order_by(Post.date_posted.desc()).all()
-    # Send the posts to the new index.html template
+    # Grab the current page number from the URL (default to page 1)
+    page = request.args.get('page', 1, type=int)
+    
+    # Fetch posts, but use .paginate() instead of .all()
+    # We will set it to 2 posts per page for easy testing
+    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=2)
+    
     return render_template('index.html', posts=posts)
 
 @main.route('/register', methods=['GET', 'POST'])
@@ -71,7 +75,9 @@ def login():
 def logout():
     logout_user()
     flash('You have been logged out.', 'info')
-    return redirect(url_for('main.index'))@main.route('/post/new', methods=['GET', 'POST'])
+    return redirect(url_for('main.index'))
+
+@main.route('/post/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
     form = PostForm()
@@ -85,18 +91,13 @@ def new_post():
         return redirect(url_for('main.index'))
         
     return render_template('create_post.html', form=form)
-@main.route('/post/new', methods=['GET', 'POST'])
-@login_required
-def new_post():
-    form = PostForm()
-    if form.validate_on_submit():
-        post = Post(title=form.title.data, content=form.content.data, author=current_user)
-        db.session.add(post)
-        db.session.commit()
-        flash('Your post has been created!', 'success')
-        return redirect(url_for('main.index'))
-        
-    return render_template('create_post.html', form=form)
+
+# Re-added the missing Post Detail route!
+@main.route("/post/<int:post_id>")
+def post(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template('post.html', post=post)
+
 @main.route("/post/<int:post_id>/update", methods=['GET', 'POST'])
 @login_required
 def update_post(post_id):
@@ -121,3 +122,13 @@ def update_post(post_id):
         
     # We can reuse the exact same HTML form we used to create posts!
     return render_template('create_post.html', form=form)
+
+@main.route("/user/<string:username>")
+def user_posts(username):
+    # Find the user by their username, or return a 404 error if they don't exist
+    user = User.query.filter_by(username=username).first_or_404()
+    
+    # Grab all posts written by this specific user, newest first
+    posts = Post.query.filter_by(author=user).order_by(Post.date_posted.desc()).all()
+    
+    return render_template('user_posts.html', posts=posts, user=user)
