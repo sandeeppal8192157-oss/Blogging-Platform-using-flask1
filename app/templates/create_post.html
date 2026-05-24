@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="card mb-4 shadow-sm mt-4">
+    <div class="card-body">
+        <h2 class="card-title">{{ post.title }}</h2>
+        <div class="text-muted mb-3" style="font-size: 0.9em;">
+            By <strong>{{ post.author.username }}</strong> on {{ post.date_posted.strftime('%Y-%m-%d') }}
+        </div>
+        <p class="card-text" style="white-space: pre-wrap;">{{ post.content }}</p>
+        
+        {% if post.author == current_user %}
+            <div class="mt-3">
+                <a class="btn btn-secondary btn-sm" href="{{ url_for('main.update_post', post_id=post.id) }}">Edit Post</a>
+            </div>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

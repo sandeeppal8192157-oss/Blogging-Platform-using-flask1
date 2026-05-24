@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from app import db
-from app.models import User
+from app.models import User, Post
+from app.forms import PostForm
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -8,8 +9,10 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    # This is the home page
-    return render_template('base.html')
+    # Fetch all posts from the database, newest first
+    posts = Post.query.order_by(Post.date_posted.desc()).all()
+    # Send the posts to the new index.html template
+    return render_template('index.html', posts=posts)
 
 @main.route('/register', methods=['GET', 'POST'])
 def register():
@@ -68,4 +71,53 @@ def login():
 def logout():
     logout_user()
     flash('You have been logged out.', 'info')
-    return redirect(url_for('main.index'))
+    return redirect(url_for('main.index'))@main.route('/post/new', methods=['GET', 'POST'])
+@login_required
+def new_post():
+    form = PostForm()
+    # When the user clicks the "Post" button and the form is valid
+    if form.validate_on_submit():
+        # Create a new post attached to the current logged-in user
+        post = Post(title=form.title.data, content=form.content.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash('Your post has been created!', 'success')
+        return redirect(url_for('main.index'))
+        
+    return render_template('create_post.html', form=form)
+@main.route('/post/new', methods=['GET', 'POST'])
+@login_required
+def new_post():
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data, content=form.content.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash('Your post has been created!', 'success')
+        return redirect(url_for('main.index'))
+        
+    return render_template('create_post.html', form=form)
+@main.route("/post/<int:post_id>/update", methods=['GET', 'POST'])
+@login_required
+def update_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    
+    # SECURITY: If the logged-in user is NOT the author, kick them out!
+    if post.author != current_user:
+        abort(403) 
+        
+    form = PostForm()
+    if form.validate_on_submit():
+        # Save the new edited text to the database
+        post.title = form.title.data
+        post.content = form.content.data
+        db.session.commit()
+        flash('Your post has been updated!', 'success')
+        return redirect(url_for('main.post', post_id=post.id))
+    elif request.method == 'GET':
+        # Pre-fill the form with the old text so they don't have to start from scratch
+        form.title.data = post.title
+        form.content.data = post.content
+        
+    # We can reuse the exact same HTML form we used to create posts!
+    return render_template('create_post.html', form=form)
